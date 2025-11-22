@@ -1,6 +1,6 @@
 # ⚖️ AI Legal Advisor [Chatbot & Voice Assistant]
 
-**Course** — DATA 622 Natural Language Processing 
+**Course** — DATA 622 Natural Language Processing (UMBC)
 
 **Creators:** Arshdeep Singh | Soumya Bhate | Yatharth Kumar 
 
