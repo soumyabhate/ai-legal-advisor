@@ -2,7 +2,16 @@
 # coding: utf-8
 
 import streamlit as st
-import sounddevice as sd
+# import sounddevice as sd
+
+try:
+    import sounddevice as sd
+    import scipy.io.wavfile
+    AUDIO_AVAILABLE = True
+except Exception:
+    sd = None
+    AUDIO_AVAILABLE = False
+
 import numpy as np
 import scipy.io.wavfile
 import ffmpeg
@@ -892,84 +901,82 @@ elif st.session_state.input_mode == "text":
 elif st.session_state.input_mode == "voice":
     st.markdown("### Ask Your Legal Question via Voice")
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if not st.session_state.recording:
-            record_col, back_col = st.columns(2)
-            with record_col:
-                if st.button("🎤 Start Recording", use_container_width=True, type="primary"):
-                    st.session_state.recording = True
-                    st.session_state.stop_event.clear()
-                    st.session_state.audio_queue = queue.Queue()
-                    st.session_state.recording_thread = threading.Thread(
-                        target=record_audio_continuous,
-                        args=(st.session_state.stop_event, st.session_state.audio_queue)
-                    )
-                    st.session_state.recording_thread.start()
-                    st.rerun()
-            with back_col:
-                if st.button("🔙 Back", use_container_width=True):
-                    st.session_state.input_mode = None
-                    st.rerun()
-        else:
-            if st.button("⏹️ Stop & Submit Question", use_container_width=True, type="secondary"):
-                st.session_state.recording = False
-                st.session_state.stop_event.set()
-
-                if st.session_state.recording_thread:
-                    st.session_state.recording_thread.join(timeout=3.0)
-
-                time.sleep(0.3)
-
-                # Process the question silently
-                # Save and transcribe
-                audio_file = save_recording(st.session_state.audio_queue, "client_question.wav")
-
-                if audio_file:
-                    # Transcribe
-                    client_text = stt(audio_file)
-
-                    if client_text:
-                        st.session_state.conversation_history.append({
-                            "role": "user", 
-                            "text": client_text,
-                            "timestamp": datetime.now().isoformat()
-                        })
-
-                        # Get legal advice
-                        legal_response, sources = get_legal_advice_with_rag(
-                            client_text, 
-                            st.session_state.legal_context,
-                            jurisdiction,
-                            st.session_state.mongo_collection,
-                            num_results,
-                            pdf_context=st.session_state.uploaded_pdf_text
+    # Cloud pe mic available nahi, isliye sirf info dikhayenge
+    if not AUDIO_AVAILABLE:
+        st.info(
+            "🎙️ Voice recording is only available in the local version of this app. "
+            "On Streamlit Cloud, please type your legal question instead."
+        )
+    else:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if not st.session_state.recording:
+                record_col, back_col = st.columns(2)
+                with record_col:
+                    if st.button("🎤 Start Recording", use_container_width=True, type="primary"):
+                        st.session_state.recording = True
+                        st.session_state.stop_event.clear()
+                        st.session_state.audio_queue = queue.Queue()
+                        st.session_state.recording_thread = threading.Thread(
+                            target=record_audio_continuous,
+                            args=(st.session_state.stop_event, st.session_state.audio_queue)
                         )
+                        st.session_state.recording_thread.start()
+                        st.rerun()
+                with back_col:
+                    if st.button("🔙 Back", use_container_width=True):
+                        st.session_state.input_mode = None
+                        st.rerun()
+            else:
+                if st.button("⏹️ Stop & Submit Question", use_container_width=True, type="secondary"):
+                    st.session_state.recording = False
+                    st.session_state.stop_event.set()
 
-                        if legal_response:
-                            # Generate audio response
-                            audio_output = tts(legal_response)
+                    if st.session_state.recording_thread:
+                        st.session_state.recording_thread.join(timeout=3.0)
 
-                            # Save response with audio file reference
-                            response_data = {
-                                "role": "assistant",
-                                "text": legal_response,
-                                "sources": sources,
-                                "timestamp": datetime.now().isoformat(),
-                                "used_pdf": bool(st.session_state.uploaded_pdf_text)
-                            }
+                    time.sleep(0.3)
 
-                            if audio_output:
-                                response_data["audio_file"] = audio_output
+                    audio_file = save_recording(st.session_state.audio_queue, "client_question.wav")
+                    if audio_file:
+                        client_text = stt(audio_file)
+                        if client_text:
+                            st.session_state.conversation_history.append({
+                                "role": "user",
+                                "text": client_text,
+                                "timestamp": datetime.now().isoformat()
+                            })
 
-                            st.session_state.conversation_history.append(response_data)
-                else:
-                    st.error("Failed to process recording. Please try again.")
+                            legal_response, sources = get_legal_advice_with_rag(
+                                client_text,
+                                st.session_state.legal_context,
+                                st.session_state.using_knowledge_base,
+                                st.session_state.uploaded_pdf_text,
+                            )
 
-                st.rerun()
+                            if legal_response:
+                                audio_output = None
+                                if st.session_state.use_tts:
+                                    audio_output = tts(legal_response)
+
+                                response_data = {
+                                    "role": "assistant",
+                                    "text": legal_response,
+                                    "sources": sources,
+                                    "timestamp": datetime.now().isoformat(),
+                                    "used_pdf": bool(st.session_state.uploaded_pdf_text)
+                                }
+                                if audio_output:
+                                    response_data["audio_file"] = audio_output
+
+                                st.session_state.conversation_history.append(response_data)
+                        else:
+                            st.error("Failed to process recording. Please try again.")
+
+                    st.rerun()
 
 # 🔴 Recording Status
-if st.session_state.recording:
+if AUDIO_AVAILABLE and st.session_state.recording:
     st.markdown("""
         <div style='text-align: center; padding: 20px; background-color: #FEE2E2; border-radius: 10px;'>
             <h3 style='color: #DC2626;'>🔴 Recording in progress...</h3>
