@@ -513,29 +513,29 @@ with st.sidebar:
                 st.info(f"Default input device: {sd.default.device[0]}")
                 st.info(f"Default output device: {sd.default.device[1]}")
 
-    # Query all devices
-    devices = sd.query_devices()
+    # # Query all devices
+    # devices = sd.query_devices()
 
-    # Build readable labels
-    input_devices = [
-        f"{i}: {d['name']} (inputs: {d['max_input_channels']})"
-        for i, d in enumerate(devices) if d['max_input_channels'] > 0
-    ]
-    output_devices = [
-        f"{i}: {d['name']} (outputs: {d['max_output_channels']})"
-        for i, d in enumerate(devices) if d['max_output_channels'] > 0
-    ]
+    # # Build readable labels
+    # input_devices = [
+    #     f"{i}: {d['name']} (inputs: {d['max_input_channels']})"
+    #     for i, d in enumerate(devices) if d['max_input_channels'] > 0
+    # ]
+    # output_devices = [
+    #     f"{i}: {d['name']} (outputs: {d['max_output_channels']})"
+    #     for i, d in enumerate(devices) if d['max_output_channels'] > 0
+    # ]
 
-    # Select input device
-    selected_input = st.selectbox("Select Input Device", input_devices)
-    # Select output device
-    selected_output = st.selectbox("Select Output Device", output_devices)
+    # # Select input device
+    # selected_input = st.selectbox("Select Input Device", input_devices)
+    # # Select output device
+    # selected_output = st.selectbox("Select Output Device", output_devices)
 
-    if st.button("Set Devices"):
-        input_index = int(selected_input.split(":")[0])
-        output_index = int(selected_output.split(":")[0])
-        sd.default.device = (input_index, output_index)
-        st.success(f"Devices set → Input: {selected_input}, Output: {selected_output}")
+    # if st.button("Set Devices"):
+    #     input_index = int(selected_input.split(":")[0])
+    #     output_index = int(selected_output.split(":")[0])
+    #     sd.default.device = (input_index, output_index)
+    #     st.success(f"Devices set → Input: {selected_input}, Output: {selected_output}")
 
 
 
