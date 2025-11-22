@@ -2,7 +2,7 @@
 
 **Course:** DATA 622 Natural Language Processing (UMBC)
 
-**Creators:** Arshdeep Singh | Soumya Bhate | Yatharth Kumar 
+**Developers:** Arshdeep Singh | Soumya Bhate | Yatharth Kumar 
 
 **Instructor:** Prof. Tony Diana
 
